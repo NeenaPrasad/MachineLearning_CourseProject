@@ -12,8 +12,8 @@ for weight lifting exercises.
 
 Read more: http://groupware.les.inf.puc-rio.br/har#ixzz40A4ZbGUZ
 
-This project involves studying the excerise data, ie, data from the sensors placed at arm, forearm, dumbbell 
-and belt to evaluate how well a person does excercise. The idea is to predict the quality of excercise.
+This project involves studying the exercise data, ie, data from the sensors placed at arm, forearm, dumbbell 
+and belt to evaluate how well a person does exercise. The idea is to predict the quality of exercise.
 
 Training dataset can be found in : https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
 Testing/ predicting dataset can be found in: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
