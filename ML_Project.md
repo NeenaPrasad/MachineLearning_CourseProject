@@ -177,14 +177,14 @@ values (arm, forearm, belt and dumbbell) are plotted seperately.
 
     grid.arrange(gph1, gph2, gph3, gph4, ncol=2)
 
-<img src="ML_Project_files/figure-markdown_strict/unnamed-chunk-5-1.png" title="" alt="" style="display: block; margin: auto;" />
+<img src="ML_Project_files/figure-html/unnamed-chunk-5-1.png" title="" alt="" style="display: block; margin: auto;" />
 
     colVar <- grep("total|classe", names(trainNew))
     dframe <- trainNew[,colVar]
 
     featurePlot(x = dframe[,1:4], y = dframe$classe, plot = "pairs")
 
-<img src="ML_Project_files/figure-markdown_strict/unnamed-chunk-5-2.png" title="" alt="" style="display: block; margin: auto;" />
+<img src="ML_Project_files/figure-html/unnamed-chunk-5-2.png" title="" alt="" style="display: block; margin: auto;" />
 
 The predictors are plotted as above, the distribution of individual
 snsor values over the 5 different classe types are plotted. Violin plot
@@ -260,7 +260,7 @@ is obtained, with an out sample error of 0.49%.
 
     plot(modFit_rf, main = "Random Forest error Rate v/s Trees")
 
-<img src="ML_Project_files/figure-markdown_strict/unnamed-chunk-8-1.png" title="" alt=""  />
+<img src="ML_Project_files/figure-html/unnamed-chunk-8-1.png" title="" alt=""  />
 
 From the graph it is evident that with the increase in number of trees
 the error rate decreases.
@@ -274,7 +274,7 @@ on y-axis and importance levels on x-axis.
 
     varImpPlot(modFit_rf, main = "Importance of Variables")
 
-<img src="ML_Project_files/figure-markdown_strict/unnamed-chunk-9-1.png" title="" alt=""  />
+<img src="ML_Project_files/figure-html/unnamed-chunk-9-1.png" title="" alt=""  />
 
 According to the graph **roll\_belt** variable has the most importance
 followed by **yaw\_belt** with **magnet\_forearm\_y** having the least
