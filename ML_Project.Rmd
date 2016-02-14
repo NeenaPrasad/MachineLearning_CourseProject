@@ -1,0 +1,227 @@
+---
+title: 'Cource Project: Machine Learning'
+author: "Neena Prasad"
+date: "February 5, 2016"
+output: html_document
+---
+
+
+```{r chunkGlobaloption, message=FALSE, echo=FALSE,error=FALSE, results='hide', warning=FALSE}
+if (!("caret") %in% installed.packages()) 
+        install.packages("caret", repos = "http://cran.rstudio.com")
+if (!("knitr") %in% installed.packages())
+        install.packages("knitr", repos = "http://cran.rstudio.com")
+if (!("ggplot2") %in% installed.packages()) 
+        install.packages("ggplot2", repos = "http://cran.rstudio.com")
+if (!("reshape2") %in% installed.packages()) 
+        install.packages("reshape2", repos = "http://cran.rstudio.com")
+if (!("dplyr") %in% installed.packages()) 
+        install.packages("dplyr", repos = "http://cran.rstudio.com")
+if (!("randomForest") %in% installed.packages()) 
+        install.packages("randomForest", repos = "http://cran.rstudio.com")
+if (!("e1071") %in% installed.packages()) 
+        install.packages("e1071", repos = "http://cran.rstudio.com")
+if (!("gridExtra") %in% installed.packages()) 
+        install.packages("gridExtra", repos = "http://cran.rstudio.com")
+if (!("rpart") %in% installed.packages()) 
+        install.packages("rpart", repos = "http://cran.rstudio.com")
+library(caret); library(knitr); library(ggplot2)
+library(dplyr); library(reshape2); library(randomForest)
+library(gridExtra); library(rpart)
+
+opts_chunk$set(echo = TRUE, results = TRUE, cache = TRUE, fig.align = 'çentre')
+options(scipen = 3, digits = 6)
+```
+
+## Synopsis
+
+The objective of the predict the manner in which a group of subjects excercised, which is classified by the classe variable, with levels A,B,C,D,E. The accelerometers attached to the **arm, forearm, belt and dumbbell** on 6 subjects are noted in the dataset. **The goal of this project is to further identify how well a person does an excercise**. For the same reason, the participants were asked to do the excercise (barbell lift) correctly and incorrectly, rated by the variable 'classe'. The data for this project come from this [source][1].  
+
+## Data collection
+
+Training and testing dataset are from the links [1][2] and [2][3] respectively. Checking is done to find if the files are already in the working directory, and is downloaded otherwise. The csv files are read in. On initial analysis of file it was found that the NA strings are coded as #DIV/0! and NA, both the files are read in with NA strings to be all read in as NA.  
+
+```{r}
+if (!("trainDF.csv" %in% list.files())){
+        trainURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+        download.file(trainURL, destfile = "trainDF.csv") 
+        rm(trainURL)
+}
+
+if (!("predictDF.csv" %in% list.files())){
+        testURL <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+        download.file(testURL, destfile =  "predictDF.csv")
+        rm(testURL)
+}
+
+trainDF <- read.csv("trainDF.csv", na.strings = c(NA,"#DIV/0!",""))
+predictDF <- read.csv("predictDF.csv", na.strings = c(NA,"#DIV/0!",""))
+
+```
+
+The training dataset has `r dim(trainDF)[1]` rows and `r dim(trainDF)[2]` variables and the testing dataset for which the classe output needs to be found has the same `r dim(predictDF)[2]` variables with `r dim(predictDF)[1]` rows.   
+
+## Data Splitting
+
+The training dataset from the url is further split into training and testing dataset with 70-30 data split based on the classe variable.  
+
+```{r}
+set.seed(12342)
+inTrain <- createDataPartition(trainDF$classe, p = 0.7, list = FALSE)
+
+training <- trainDF[inTrain,]
+testing <- trainDF[-inTrain,]
+
+```
+
+## Cleaning the data and Covariate selection
+
+On observing the data, we need only the accelerometer values from the dumbell, arm, forearm and belt to predict the "classe" output, which justifies the removal of any other variables that does not give those measurements. Further, the variables that does not have much variance and thereby provide insignificant effect on the prediction or modelling are removed. It is also seen that the columns with higher percentages of NA values are removed to provide a cleaner dataset.  
+
+```{r}
+#removing variables other than sensor values and classe (output variable)
+# ^ inside [] to differentiate from arm from forearm
+
+rmVar <- colnames(training)[-grep("[^fore]arm|belt|dumbbell|forearm|classe",
+                                 colnames(training))]
+
+nsv <- nearZeroVar(training[,(!(colnames(training) %in% rmVar))],
+                   saveMetrics = TRUE)
+# removing variables with zero variance
+rmVar <- c(rmVar, row.names(nsv)[which(nsv$nzv)])
+
+# finding columns with percentage of NA values
+temp <- sapply(training[,(!(colnames(training) %in% rmVar))], 
+               function(x){sum(is.na(x))/nrow(training)})
+
+# removing columns with NA accounting for 70% of values
+rmVar <- c(rmVar, names(temp[temp>0.7]))
+
+# Cleaning up the training, testing and prediction datasets
+trainNew <- training[,(!(colnames(training) %in% rmVar))]
+testNew <- testing[,(!(colnames(testing) %in% rmVar))]
+predictNew <- predictDF[,(!(colnames(predictDF) %in% rmVar))]
+```
+
+```{r }
+# training set data and type
+str(trainNew)
+```
+The resultant datasets have **`r dim(trainNew)[2] - 1`** predictor variables to predict the _**classe**_ output.   
+
+
+
+## Plotting Predictors
+
+There are **`r dim(trainNew)[2] - 1`** predictor variables involved, and plotting them all on a map might be tedious. For easier viewing the different accelerometer values (arm, forearm, belt and dumbbell) are plotted seperately.  
+
+```{r fig.align='center', fig.height=6, fig.width=10}
+plotVar <- function(dframe, string){
+        string <- paste0(string,"|classe")
+        rmVar <- grep("total", names(dframe))
+        dframe <- dframe[,-rmVar]
+        colVar <- grep(string, colnames(dframe))
+        newDF <- melt(dframe[,colVar], id = "classe")
+        #https://www3.nd.edu/~steve/computing_with_data/13_Facets/facets.html
+        ggplot(data = newDF, aes(x = classe, y = value)) + 
+                geom_violin(aes(fill = classe)) + 
+                scale_fill_brewer(palette = "Set2") + 
+                facet_wrap(~variable, scales = "free_y") 
+}
+
+gph1 <- plotVar(trainNew, "belt")
+gph2 <- plotVar(trainNew, "forearm")
+gph3 <- plotVar(trainNew, "[^fore]arm")
+gph4 <- plotVar(trainNew, "dumbbell")
+
+grid.arrange(gph1, gph2, gph3, gph4, ncol=2)
+
+colVar <- grep("total|classe", names(trainNew))
+dframe <- trainNew[,colVar]
+
+featurePlot(x = dframe[,1:4], y = dframe$classe, plot = "pairs")
+
+```
+
+The predictors are plotted as above, the distribution of individual snsor values over the 5 different classe types are plotted. Violin plot is used to show the variance and density of the individual data points. The pair plot of total sensor values are also drawn to check for distinction between the different classes.  
+
+## RandomForest modeling
+
+After selecting the ideal covariates by checking for their variablity in affecting the outcome and removing the variables without significant data, the next step is to model and train the data.  
+Using Random Forest to model the training data. Cross validation is not done here, since it is not necessary to get unbiased estimate of the test set error in random forest modelling. The reason being it is already taken care by the random forest package, ie, even in the absence of a new data the out-of-bag prediction is returned.  
+
+The aim is to model the output "classe" based on all the sensor values. Instead of the train() function from the caret package, the randomForest function is used since it provided the results in less than 4 minutes as compared to hours took with train() function.  
+
+```{r}
+set.seed(12342)
+modFit_rf <- randomForest(as.factor(trainNew$classe)~., data = trainNew[,-53],
+                          method = "class")
+```
+
+### In & Out of Sample Error and Prediction Accuracy
+
+In sample error refers to the error incurred when predicting on the sample data and out of sample error refers to the error incurred on predicting with the test data. As expected the in sample error will be less than the out of sample error.  
+
+```{r, echo = FALSE}
+cf_in <- confusionMatrix(trainNew$classe, predict(modFit_rf, 
+                newdata = trainNew[,-53], type="class"))
+cf_out <- confusionMatrix(testNew$classe, predict(modFit_rf, 
+                newdata = testNew[,-53], type="class"))
+cf_out
+```
+
+In the training set, an accuracy of `r sprintf("%0.2f",cf_in$overall[1]*100)`% is obtained, which means that the in sample error will be `r sprintf("%0.2f",(1-cf_in$overall[1])*100)` %. Similarly an accuracy of `r sprintf("%0.2f",cf_out$overall[1]*100)`% is obtained, with an out sample error of `r sprintf("%0.2f",(1-cf_out$overall[1])*100)`%.  
+
+#### Error rate v/s Trees
+
+```{r}
+plot(modFit_rf, main = "Random Forest error Rate v/s Trees")
+```
+
+    
+From the graph it is evident that with the increase in number of trees the error rate decreases.
+
+### Importance of Variables
+
+Variable importance is an important output of the random forest model, it explains the importance of each variable in predicting the outcome. It is plotted with the most important to least important with variables on y-axis and importance levels on x-axis.    
+
+
+```{r}
+varImpPlot(modFit_rf, main = "Importance of Variables")
+
+```
+   
+According to the graph **roll_belt** variable has the most importance followed by **yaw_belt** with **magnet_forearm_y** having the least importance  
+
+## Predicting Values
+  
+Predicted Values for the testing dataset provided are as follows, and are obtained by applying the random model fitted to the training set.  
+
+```{r}
+predict(modFit_rf, newdata = predictNew[-53], type="class")
+
+```
+
+## Decision tree
+  
+In order to compare the accuracy, decision tree algorithm can be run on the data with crossvalidation.  
+
+```{r results='hide'}
+modFit_dt <- train(classe~., data = trainNew, method = "rpart", 
+                   trControl = trainControl("cv"))
+cf_dtout <- confusionMatrix(testNew$classe, predict(modFit_dt, 
+                newdata = testNew[,-53]))
+cf_dtin <- confusionMatrix(trainNew$classe, predict(modFit_dt, 
+                newdata = trainNew[,-53]))
+```
+    
+In the training set, an accuracy of `r sprintf("%0.2f",cf_dtin$overall[1]*100)`% is obtained, which means that the in sample error will be `r sprintf("%0.2f",(1-cf_dtin$overall[1])*100)` %. Similarly an accuracy of `r sprintf("%0.2f",cf_dtout$overall[1]*100)`% is obtained, with an out sample error of `r sprintf("%0.2f",(1-cf_dtout$overall[1])*100)`%.
+
+
+## Conclusion
+  
+From the two algorithms used, it is evident that a random forest model offers better prediction result of `r sprintf("%0.2f",(1-cf_out$overall[1])*100)`% compared to the simple decision tree.  
+
+[1]: http://groupware.les.inf.puc-rio.br/har
+[2]: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+[3]: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
