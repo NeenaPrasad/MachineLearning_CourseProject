@@ -2,11 +2,11 @@ Synopsis
 --------
 
 The objective of the predict the manner in which a group of subjects
-excercised, which is classified by the classe variable, with levels
+exercised, which is classified by the classe variable, with levels
 A,B,C,D,E. The accelerometers attached to the **arm, forearm, belt and
 dumbbell** on 6 subjects are noted in the dataset. **The goal of this
-project is to further identify how well a person does an excercise**.
-For the same reason, the participants were asked to do the excercise
+project is to further identify how well a person does an exercise**.
+For the same reason, the participants were asked to do the exercise
 (barbell lift) correctly and incorrectly, rated by the variable
 'classe'. The data for this project come from this
 [source](http://groupware.les.inf.puc-rio.br/har).
