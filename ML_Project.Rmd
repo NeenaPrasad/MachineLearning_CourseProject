@@ -1,8 +1,9 @@
 ---
-title: 'Cource Project: Machine Learning'
+title: 'Course Project: Machine Learning'
 author: "Neena Prasad"
 date: "February 5, 2016"
-output: md_document
+output: html_document
+keep_md: true
 ---
 
 
@@ -29,7 +30,7 @@ library(caret); library(knitr); library(ggplot2)
 library(dplyr); library(reshape2); library(randomForest)
 library(gridExtra); library(rpart)
 
-opts_chunk$set(echo = TRUE, results = TRUE, cache = TRUE, fig.align = 'çentre')
+opts_chunk$set(echo = TRUE, results = TRUE, cache = TRUE, fig.align = 'Ã§entre')
 options(scipen = 3, digits = 6)
 ```
 
@@ -224,4 +225,4 @@ From the two algorithms used, it is evident that a random forest model offers be
 
 [1]: http://groupware.les.inf.puc-rio.br/har
 [2]: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
-[3]: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+[3]: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv  
